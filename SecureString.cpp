@@ -18,12 +18,6 @@ DWORD crc32buf(const char *buf, size_t len);
 #define DEFAULT_ALLOCATED 80
 #endif
 
-#ifdef SECURESTRING_NOT_THREADSAFE
-# define thread_lock()
-#else
-# define thread_lock() std::lock_guard<std::recursive_mutex> lock(mutex_lock)
-#endif
-
 using namespace Kryptan::Core;
 
 SecureString::SecureString(void){
@@ -52,10 +46,10 @@ SecureString::SecureString(const SecureString& src){
 
 SecureString::~SecureString(void)
 {
-    thread_lock();
     //Destroy all unsecured data
-    UnsecuredStringFinished();
+    UnsecuredStringFinished(); //is already thread safe
 
+    __securestring_thread_lock();
     //Zero out all data
     memset(_data, 0, allocated());
     memset(_key, 0, allocated());
@@ -68,7 +62,7 @@ SecureString::~SecureString(void)
 }
 
 void SecureString::init(){
-    thread_lock();
+    __securestring_thread_lock();
     _data = new ssbyte[sizeof(ssnr)];
     _key = new ssbyte[sizeof(ssnr)];
     //fill key with zeros, this keeps the length() and allocated() from failing before any call to allocate(x)
@@ -82,7 +76,11 @@ void SecureString::init(){
 }
 
 void SecureString::allocate(ssnr size){
-    thread_lock();
+    __securestring_thread_lock();
+    allocateImpl(size);
+}
+
+void SecureString::allocateImpl(ssnr size){
     //increase size by one to include last '\0'
     size += 1;
     //the new array must at least be able to hold a key the size of ssnr
@@ -130,7 +128,7 @@ void SecureString::allocate(ssnr size){
 }
 
 void SecureString::append(ssarr str, ssnr maxlen, bool deleteStr){
-    thread_lock();
+    __securestring_thread_lock();
     //set len to strlen(str) or maxlen, wichever is lowest (except if maxlen is 0 then set len to strlen(0))
     ssnr len = (maxlen == 0) ? strlen(str) : std::min((ssnr)strlen(str), maxlen);
     ssnr oldlen = length();
@@ -138,7 +136,7 @@ void SecureString::append(ssarr str, ssnr maxlen, bool deleteStr){
     ssnr totlen = oldlen + len;
     //Check if there is room for the new string
     if (totlen > allocated()){
-        allocate(totlen * 2); //make more room than neccessary, just in case there will be more appends later
+        allocateImpl(totlen * 2); //make more room than neccessary, just in case there will be more appends later
     }
     for (ssnr i = 0; i < len; i++){
         //Store in  array
@@ -162,12 +160,12 @@ void SecureString::append(c_ssarr str, ssnr maxlen){
 }
 
 void SecureString::append(const SecureString& str){
-    thread_lock();
+    __securestring_thread_lock();
     ssnr len = str.length();
     ssnr oldlen = this->length();
     ssnr totlen = oldlen + len;
     if (totlen > this->allocated()){
-        this->allocate(totlen * 2); //make more room than neccessary, just in case there will be more appends later
+        this->allocateImpl(totlen * 2); //make more room than neccessary, just in case there will be more appends later
     }
     for (ssnr i = 0; i < len; i++){
         ssbyte c = str._data[i] ^ str._key[i];
@@ -184,7 +182,7 @@ void SecureString::append(const SecureString& str){
 }
 
 void SecureString::assign(ssarr str, ssnr maxlen, bool deleteStr){
-    thread_lock();
+    __securestring_thread_lock();
     //set len to strlen(str) or maxlen, wichever is lowest (except if maxlen is 0 then set len to strlen(0))
     ssnr len = (maxlen == 0) ? strlen(str) : std::min((ssnr)strlen(str), maxlen);
 
@@ -196,7 +194,7 @@ void SecureString::assign(ssarr str, ssnr maxlen, bool deleteStr){
 
     //allocate enough space
     if (len > allocated()){
-        allocate(len * 2); //make more room than neccessary, just in case there will be more appends later
+        allocateImpl(len * 2); //make more room than neccessary, just in case there will be more appends later
     }
     for (ssnr i = 0; i < len; i++){
         _data[i] = _key[i] ^ str[i];
@@ -219,7 +217,7 @@ void SecureString::assign(c_ssarr str, ssnr maxlen){
 }
 
 void SecureString::assign(const SecureString& str){
-    thread_lock();
+    __securestring_thread_lock();
     //remove old data
     if (length() > 0){
         ssnr oldlen = length();
@@ -228,7 +226,7 @@ void SecureString::assign(const SecureString& str){
 
     ssnr len = str.length();
     if (len > this->allocated()){
-        this->allocate(len * 2); //make more room than neccessary, just in case there will be more appends later
+        this->allocateImpl(len * 2); //make more room than neccessary, just in case there will be more appends later
     }
     for (ssnr i = 0; i < len; i++){
         this->_data[i] = this->_key[i] ^ (str._key[i] ^ str._data[i]);
@@ -242,7 +240,7 @@ void SecureString::assign(const SecureString& str){
 }
 
 SecureString::c_ssarr SecureString::getUnsecureString(){
-    thread_lock();
+    __securestring_thread_lock();
     getUnsecureStringImpl();
 }
 SecureString::c_ssarr SecureString::getUnsecureStringImpl(){
@@ -260,14 +258,14 @@ SecureString::c_ssarr SecureString::getUnsecureStringImpl(){
 }
 
 SecureString::ssarr SecureString::getUnsecureStringM(){
-    thread_lock();
-    ssarr ret = (ssarr)getUnsecureString();
+    __securestring_thread_lock();
+    ssarr ret = (ssarr)getUnsecureStringImpl();
     _mutableplaintextcopy = true;
     return ret;
 }
 
 SecureString::c_ssarr SecureString::getUnsecureNextline(){
-    thread_lock();
+    __securestring_thread_lock();
     //there can only be one unsecure plaintext copy at a time
     if (_plaintextcopy != NULL)
         return NULL;
@@ -310,7 +308,7 @@ SecureString::c_ssarr SecureString::getUnsecureNextline(){
 }
 
 void SecureString::UnsecuredStringFinished(){
-    thread_lock();
+    __securestring_thread_lock();
     if (_plaintextcopy == NULL)
         return;
     if (_mutableplaintextcopy){
@@ -324,7 +322,7 @@ void SecureString::UnsecuredStringFinished(){
 }
 
 bool SecureString::equals(const SecureString& s2) const{
-    thread_lock();
+    __securestring_thread_lock();
     if (s2.length() != this->length()){
         return false;
     }
@@ -332,7 +330,7 @@ bool SecureString::equals(const SecureString& s2) const{
 }
 
 bool SecureString::equals(const char* s2) const{
-    thread_lock();
+    __securestring_thread_lock();
     unsigned int len = this->length();
     if (strlen(s2) != len){
         return false;
