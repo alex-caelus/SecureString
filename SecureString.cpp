@@ -241,7 +241,7 @@ void SecureString::assign(const SecureString& str){
 
 SecureString::c_ssarr SecureString::getUnsecureString(){
     __securestring_thread_lock();
-    getUnsecureStringImpl();
+    return getUnsecureStringImpl();
 }
 SecureString::c_ssarr SecureString::getUnsecureStringImpl(){
     //there can only be one unsecure plaintext copy at a time
