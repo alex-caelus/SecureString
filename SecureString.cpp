@@ -14,7 +14,8 @@ DWORD crc32buf(const char *buf, size_t len);
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifdef SECURESTRING_OVERRIDE_DEFAULT_ALLOCATED
-#else DEFAULT_ALLOCATED SECURESTRING_OVERRIDE_DEFAULT_ALLOCATED
+#define DEFAULT_ALLOCATED SECURESTRING_OVERRIDE_DEFAULT_ALLOCATED
+#else
 #define DEFAULT_ALLOCATED 80
 #endif
 
