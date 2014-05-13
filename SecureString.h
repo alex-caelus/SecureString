@@ -42,8 +42,8 @@
 # define __securestring_thread_lock()
 #endif
 
-namespace Kryptan {
-    namespace Core {
+namespace Caelus {
+    namespace Utilities {
 
         /**
          * SecureString class, this is a container that does not keep strings in plain
@@ -83,7 +83,7 @@ namespace Kryptan {
              * @param maxlen - The strings max length, 0 means auto
              * @param deleteStr - performs delete on str if true
              */
-            SecureString(ssarr str, ssnr maxlen = 0, bool deleteStr = true);
+            SecureString(ssarr str, ssnr maxlen = 0, bool deleteStr = true, bool allowNull = false);
 
 
             /**
@@ -110,7 +110,7 @@ namespace Kryptan {
              * @param maxlen - The strings max length, 0 means auto
              * @param deleteStr - performs delete on str if true
              */
-            void assign(ssarr str, ssnr maxlen = 0, bool deleteStr = true);
+            void assign(ssarr str, ssnr maxlen = 0, bool deleteStr = true, bool allowNull = false);
 
             /**
              * This assigns a string to this string (replaces the content).

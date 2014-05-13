@@ -19,7 +19,7 @@ DWORD crc32buf(const char *buf, size_t len);
 #define DEFAULT_ALLOCATED 80
 #endif
 
-using namespace Kryptan::Core;
+using namespace Caelus::Utilities;
 
 SecureString::SecureString(void){
     init();
@@ -30,9 +30,9 @@ SecureString::SecureString(ssnr size){
     allocate(size);
 }
 
-SecureString::SecureString(ssarr str, ssnr maxlen, bool deleteStr){
+SecureString::SecureString(ssarr str, ssnr maxlen, bool deleteStr, bool allowNull){
     init();
-    assign(str, maxlen, deleteStr);
+    assign(str, maxlen, deleteStr, allowNull);
 }
 
 SecureString::SecureString(c_ssarr str, ssnr maxlen){
@@ -182,10 +182,24 @@ void SecureString::append(const SecureString& str){
     resetLinefeedPosition();
 }
 
-void SecureString::assign(ssarr str, ssnr maxlen, bool deleteStr){
+void SecureString::assign(ssarr str, ssnr maxlen, bool deleteStr, bool allowNull){
     __securestring_thread_lock();
     //set len to strlen(str) or maxlen, wichever is lowest (except if maxlen is 0 then set len to strlen(0))
-    ssnr len = (maxlen == 0) ? strlen(str) : std::min((ssnr)strlen(str), maxlen);
+    //ssnr len = (maxlen == 0) ? strlen(str) : std::min((ssnr)strlen(str), maxlen);
+    ssnr len;
+
+    if (maxlen == 0)
+    {
+        len = strlen(str);
+    }
+    else if (allowNull)
+    {
+        len = maxlen;
+    }
+    else
+    {
+        len = std::min((ssnr)strlen(str), maxlen);
+    }
 
     //remove old data
     if (length() > 0){
