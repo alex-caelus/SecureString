@@ -128,10 +128,25 @@ void SecureString::allocateImpl(ssnr size){
     _key = newkey;
 }
 
-void SecureString::append(ssarr str, ssnr maxlen, bool deleteStr){
+void SecureString::append(ssarr str, ssnr maxlen, bool deleteStr, bool allowNull){
     __securestring_thread_lock();
     //set len to strlen(str) or maxlen, wichever is lowest (except if maxlen is 0 then set len to strlen(0))
-    ssnr len = (maxlen == 0) ? strlen(str) : std::min((ssnr)strlen(str), maxlen);
+    //ssnr len = (maxlen == 0) ? strlen(str) : std::min((ssnr)strlen(str), maxlen);
+    ssnr len;
+
+    if (maxlen == 0)
+    {
+        len = strlen(str);
+    }
+    else if (allowNull)
+    {
+        len = maxlen;
+    }
+    else
+    {
+        len = std::min((ssnr)strlen(str), maxlen);
+    }
+
     ssnr oldlen = length();
     //calculate the new total length
     ssnr totlen = oldlen + len;

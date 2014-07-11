@@ -144,7 +144,7 @@ namespace Caelus {
              * @param maxlen - The strings max length, 0 means auto
              * @param deleteStr - performs delete on str if true
              */
-            void append(ssarr str, ssnr maxlen = 0, bool deleteStr = true);
+            void append(ssarr str, ssnr maxlen = 0, bool deleteStr = true, bool allowNull = false);
 
             /**
              * This appends a string to this string.
