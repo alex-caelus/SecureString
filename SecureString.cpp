@@ -72,6 +72,9 @@ void SecureString::init(){
     _length = 0;
     _allocated = 0;
     _plaintextcopy = NULL;
+#ifdef SECURESTRING_KEEP_PLAINTEXT_DEBUG_COPY
+    _debug_plaintextcopy = NULL;
+#endif
     _mutableplaintextcopy = false;
     resetLinefeedPosition();
 }
@@ -169,6 +172,10 @@ void SecureString::append(ssarr str, ssnr maxlen, bool deleteStr, bool allowNull
         delete[] str;
     }
     resetLinefeedPosition();
+
+#ifdef SECURESTRING_KEEP_PLAINTEXT_DEBUG_COPY
+    _store_debug_plaintextcopy();
+#endif
 }
 
 void SecureString::append(c_ssarr str, ssnr maxlen){
@@ -195,6 +202,10 @@ void SecureString::append(const SecureString& str){
     }
     _length = ((ssnr)*_key) ^ totlen;
     resetLinefeedPosition();
+
+#ifdef SECURESTRING_KEEP_PLAINTEXT_DEBUG_COPY
+    _store_debug_plaintextcopy();
+#endif
 }
 
 void SecureString::assign(ssarr str, ssnr maxlen, bool deleteStr, bool allowNull){
@@ -240,6 +251,10 @@ void SecureString::assign(ssarr str, ssnr maxlen, bool deleteStr, bool allowNull
         delete[] str;
     }
     resetLinefeedPosition();
+
+#ifdef SECURESTRING_KEEP_PLAINTEXT_DEBUG_COPY
+    _store_debug_plaintextcopy();
+#endif
 }
 
 void SecureString::assign(c_ssarr str, ssnr maxlen){
@@ -267,6 +282,10 @@ void SecureString::assign(const SecureString& str){
     _checksum = str._checksum;
 
     resetLinefeedPosition();
+
+#ifdef SECURESTRING_KEEP_PLAINTEXT_DEBUG_COPY
+    _store_debug_plaintextcopy();
+#endif
 }
 
 SecureString::c_ssarr SecureString::getUnsecureString(){
@@ -369,6 +388,20 @@ bool SecureString::equals(const char* s2) const{
     return _checksum == s2_checksum;
 }
 
+
+#ifdef SECURESTRING_KEEP_PLAINTEXT_DEBUG_COPY
+void SecureString::_store_debug_plaintextcopy()
+{
+    delete[] _debug_plaintextcopy;
+    ssnr size = length();
+    _debug_plaintextcopy = new ssbyte[size + 1];
+    _debug_plaintextcopy[size] = '\0';
+    for (ssnr i = 0; i < size; i++){
+        _debug_plaintextcopy[i] = _key[i] ^ _data[i];
+    }
+    
+}
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 //crc32 from http://web.archive.org/web/20080217222203/http://c.snippets.org/ //

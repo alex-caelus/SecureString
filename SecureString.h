@@ -42,6 +42,10 @@
 # define __securestring_thread_lock()
 #endif
 
+#ifdef SECURESTRING_DEBUG
+#define SECURESTRING_KEEP_PLAINTEXT_DEBUG_COPY
+#endif
+
 namespace Caelus {
     namespace Utilities {
 
@@ -291,6 +295,11 @@ namespace Caelus {
             
             c_ssarr getUnsecureStringImpl();
             void allocateImpl(ssnr size);
+
+#ifdef SECURESTRING_KEEP_PLAINTEXT_DEBUG_COPY
+            ssarr _debug_plaintextcopy;
+            void _store_debug_plaintextcopy();
+#endif
 
         private:
             ssarr _plaintextcopy;
